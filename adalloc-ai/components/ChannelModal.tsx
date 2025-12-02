@@ -11,6 +11,7 @@ interface ChannelModalProps {
 }
 
 const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onSave, channel }) => {
+  const [useManualRoas, setUseManualRoas] = useState(false);
   const [formData, setFormData] = useState<ChannelData>({
     id: channel?.id || `ch-${Date.now()}`,
     name: channel?.name || '',
@@ -31,13 +32,24 @@ const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onSave, ch
     e.preventDefault();
 
     // Calculate derived metrics
-    const calculatedRoas = formData.spend > 0 ? formData.revenue / formData.spend : 0;
+    let finalRoas = formData.roas;
+    let finalRevenue = formData.revenue;
+
+    if (useManualRoas) {
+      // If manual ROAS, calculate revenue from spend * roas
+      finalRevenue = formData.spend * formData.roas;
+    } else {
+      // If auto ROAS, calculate from spend and revenue
+      finalRoas = formData.spend > 0 ? formData.revenue / formData.spend : 0;
+    }
+
     const calculatedCpc = formData.clicks > 0 ? formData.spend / formData.clicks : 0;
     const calculatedCtr = formData.impressions > 0 ? (formData.clicks / formData.impressions) * 100 : 0;
 
     onSave({
       ...formData,
-      roas: calculatedRoas,
+      revenue: finalRevenue,
+      roas: finalRoas,
       cpc: calculatedCpc,
       ctr: calculatedCtr
     });
@@ -79,6 +91,22 @@ const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onSave, ch
             />
           </div>
 
+          {/* ROAS Calculation Method */}
+          <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
+            <label className="flex items-center justify-between cursor-pointer">
+              <div>
+                <div className="font-semibold text-slate-900">Manuel ROAS Girişi</div>
+                <div className="text-sm text-slate-600">ROAS'ı manuel gir, gelir otomatik hesaplansın</div>
+              </div>
+              <input
+                type="checkbox"
+                checked={useManualRoas}
+                onChange={(e) => setUseManualRoas(e.target.checked)}
+                className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+              />
+            </label>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -95,20 +123,44 @@ const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onSave, ch
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Gelir ($) *
-              </label>
-              <input
-                type="number"
-                required
-                min="0"
-                step="100"
-                value={formData.revenue}
-                onChange={(e) => setFormData({ ...formData, revenue: Number(e.target.value) })}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-              />
-            </div>
+            {useManualRoas ? (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  ROAS (Return on Ad Spend) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  step="0.1"
+                  value={formData.roas}
+                  onChange={(e) => setFormData({ ...formData, roas: Number(e.target.value) })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  placeholder="Örn: 4.5"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Tahmini Gelir: ${(formData.spend * formData.roas).toFixed(0)}
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Gelir ($) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  step="100"
+                  value={formData.revenue}
+                  onChange={(e) => setFormData({ ...formData, revenue: Number(e.target.value) })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Tahmini ROAS: {formData.spend > 0 ? (formData.revenue / formData.spend).toFixed(2) : '0.00'}x
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
