@@ -49,10 +49,36 @@ export interface RecommendationResponse {
   globalStrategy: string;
 }
 
-export type ViewMode = 'overview' | 'customer' | 'campaign';
+export type ViewMode = 'overview' | 'customer' | 'campaign' | 'channels' | 'goals' | 'settings';
 
 export interface ViewState {
   mode: ViewMode;
   selectedCustomerId?: string;
   selectedCampaignId?: string;
+}
+
+export type Currency = 'USD' | 'EUR' | 'GBP' | 'TRY';
+
+export interface CurrencyInfo {
+  code: Currency;
+  symbol: string;
+  name: string;
+}
+
+export interface Goal {
+  id: string;
+  name: string;
+  targetValue: number;
+  currentValue: number;
+  deadline: string;
+  status: 'active' | 'completed' | 'overdue';
+  type: 'revenue' | 'roas' | 'spend' | 'customers';
+  createdAt: string;
+}
+
+export interface AppSettings {
+  currency: Currency;
+  defaultCampaignBudget: number;
+  defaultChannelBudget: number;
+  showWelcome: boolean;
 }

@@ -1,4 +1,4 @@
-import { ChannelData, Customer } from './types';
+import { ChannelData, Customer, CurrencyInfo, AppSettings } from './types';
 
 export const INITIAL_CHANNELS: ChannelData[] = [
   {
@@ -162,3 +162,17 @@ export const INITIAL_CUSTOMERS: Customer[] = [
 
 export const CHANNEL_COLORS = ['#4285F4', '#0668E1', '#000000', '#0a66c2', '#FF6B6B', '#4ECDC4', '#45B7D1'];
 export const CUSTOMER_COLORS = ['#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#3B82F6', '#EC4899'];
+
+export const CURRENCIES: CurrencyInfo[] = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'TRY', symbol: '₺', name: 'Turkish Lira' }
+];
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  currency: 'USD',
+  defaultCampaignBudget: 10000,
+  defaultChannelBudget: 5000,
+  showWelcome: true
+};

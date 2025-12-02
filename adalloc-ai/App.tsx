@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   LayoutDashboard,
-  Settings,
+  Settings as SettingsIcon,
   BarChart3,
   PieChart,
   Target,
@@ -9,11 +9,14 @@ import {
   Plus,
   Search,
   Download,
-  Filter
+  Filter,
+  Radio,
+  BrainCircuit
 } from 'lucide-react';
 
-import { Customer, Campaign, ChannelData, ViewState } from './types';
-import { INITIAL_CUSTOMERS } from './constants';
+import { Customer, Campaign, ChannelData, ViewState, AppSettings, Goal, RecommendationResponse } from './types';
+import { INITIAL_CUSTOMERS, DEFAULT_SETTINGS } from './constants';
+import { formatCurrency } from './utils';
 import MetricCard from './components/MetricCard';
 import { SpendDistributionChart, PerformanceBarChart } from './components/Charts';
 import CustomerCard from './components/CustomerCard';
@@ -22,38 +25,139 @@ import CampaignCard from './components/CampaignCard';
 import CampaignModal from './components/CampaignModal';
 import ChannelModal from './components/ChannelModal';
 import Breadcrumbs from './components/Breadcrumbs';
+import SettingsView from './components/SettingsView';
+import GoalsView from './components/GoalsView';
+import ChannelsView from './components/ChannelsView';
+import OptimizationModal from './components/OptimizationModal';
+import { getBudgetOptimization } from './services/geminiService';
 
 const App: React.FC = () => {
   // State Management
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [viewState, setViewState] = useState<ViewState>({ mode: 'overview' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [goals, setGoals] = useState<Goal[]>([]);
 
   // Modal States
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
   const [isChannelModalOpen, setIsChannelModalOpen] = useState(false);
 
+  // AI Modal State
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiRecommendation, setAiRecommendation] = useState<RecommendationResponse | null>(null);
+
   // Load data from localStorage on mount
   useEffect(() => {
     const savedData = localStorage.getItem('adalloc-customers');
+    const savedSettings = localStorage.getItem('adalloc-settings');
+    const savedGoals = localStorage.getItem('adalloc-goals');
+
     if (savedData) {
       setCustomers(JSON.parse(savedData));
     } else {
       setCustomers(INITIAL_CUSTOMERS);
     }
+
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings));
+    }
+
+    if (savedGoals) {
+      setGoals(JSON.parse(savedGoals));
+    }
   }, []);
 
-  // Save data to localStorage whenever customers change
+  // Save data to localStorage whenever they change
   useEffect(() => {
     if (customers.length > 0) {
       localStorage.setItem('adalloc-customers', JSON.stringify(customers));
     }
   }, [customers]);
 
+  useEffect(() => {
+    localStorage.setItem('adalloc-settings', JSON.stringify(settings));
+  }, [settings]);
+
+  useEffect(() => {
+    localStorage.setItem('adalloc-goals', JSON.stringify(goals));
+  }, [goals]);
+
   // Navigation
-  const handleNavigate = (mode: 'overview' | 'customer' | 'campaign', customerId?: string, campaignId?: string) => {
+  const handleNavigate = (mode: ViewState['mode'], customerId?: string, campaignId?: string) => {
     setViewState({ mode, selectedCustomerId: customerId, selectedCampaignId: campaignId });
+  };
+
+  // Goals Management
+  const handleAddGoal = (goalData: Omit<Goal, 'id' | 'createdAt'>) => {
+    const newGoal: Goal = {
+      ...goalData,
+      id: `goal-${Date.now()}`,
+      createdAt: new Date().toISOString()
+    };
+    setGoals([...goals, newGoal]);
+  };
+
+  const handleUpdateGoal = (goalId: string, currentValue: number) => {
+    setGoals(goals.map(goal =>
+      goal.id === goalId
+        ? {
+            ...goal,
+            currentValue,
+            status: currentValue >= goal.targetValue ? 'completed' : goal.status
+          }
+        : goal
+    ));
+  };
+
+  // AI Strategist
+  const handleOptimizeClick = async () => {
+    if (!selectedCampaign) return;
+
+    setIsAiModalOpen(true);
+    setAiLoading(true);
+    setAiRecommendation(null);
+
+    try {
+      const result = await getBudgetOptimization(selectedCampaign.channels, selectedCampaign.budget);
+      setAiRecommendation(result);
+    } catch (e) {
+      console.error("Optimization failed", e);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const applyOptimization = (newAllocations: Record<string, number>) => {
+    setCustomers(customers.map(customer => {
+      if (customer.id === viewState.selectedCustomerId) {
+        return {
+          ...customer,
+          campaigns: customer.campaigns.map(campaign => {
+            if (campaign.id === viewState.selectedCampaignId) {
+              return {
+                ...campaign,
+                channels: campaign.channels.map(ch => {
+                  if (newAllocations[ch.id] !== undefined) {
+                    const newSpend = newAllocations[ch.id];
+                    return {
+                      ...ch,
+                      spend: newSpend,
+                      revenue: newSpend * ch.roas
+                    };
+                  }
+                  return ch;
+                })
+              };
+            }
+            return campaign;
+          })
+        };
+      }
+      return customer;
+    }));
   };
 
   // Customer Operations
@@ -385,19 +489,28 @@ const App: React.FC = () => {
         {/* Campaign Header */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6">
           <div className="flex items-start justify-between mb-4">
-            <div>
+            <div className="flex-1">
               <h2 className="text-2xl font-bold text-slate-900">{selectedCampaign.name}</h2>
               <p className="text-slate-500 mt-1">{selectedCampaign.description}</p>
             </div>
-            <div className={`px-4 py-2 rounded-full text-sm font-semibold ${
-              selectedCampaign.status === 'active'
-                ? 'bg-emerald-100 text-emerald-700'
-                : selectedCampaign.status === 'paused'
-                ? 'bg-amber-100 text-amber-700'
-                : 'bg-slate-100 text-slate-600'
-            }`}>
-              {selectedCampaign.status === 'active' ? 'Aktif' :
-               selectedCampaign.status === 'paused' ? 'Duraklatıldı' : 'Tamamlandı'}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleOptimizeClick}
+                className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-4 py-2 rounded-lg font-medium shadow-md transition-all"
+              >
+                <BrainCircuit className="w-4 h-4" />
+                <span className="hidden sm:inline">AI Strategist</span>
+              </button>
+              <div className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                selectedCampaign.status === 'active'
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : selectedCampaign.status === 'paused'
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'bg-slate-100 text-slate-600'
+              }`}>
+                {selectedCampaign.status === 'active' ? 'Aktif' :
+                 selectedCampaign.status === 'paused' ? 'Duraklatıldı' : 'Tamamlandı'}
+              </div>
             </div>
           </div>
           <div className="flex gap-6 text-sm">
@@ -602,17 +715,38 @@ const App: React.FC = () => {
             <LayoutDashboard className="w-5 h-5 min-w-[20px]" />
             <span className="ml-3 hidden lg:block font-medium">Dashboard</span>
           </button>
-          <button className="w-full flex items-center p-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
-            <PieChart className="w-5 h-5 min-w-[20px]" />
-            <span className="ml-3 hidden lg:block font-medium">Raporlar</span>
+          <button
+            onClick={() => handleNavigate('channels')}
+            className={`w-full flex items-center p-3 rounded-lg transition-all ${
+              viewState.mode === 'channels'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Radio className="w-5 h-5 min-w-[20px]" />
+            <span className="ml-3 hidden lg:block font-medium">Channels</span>
           </button>
-          <button className="w-full flex items-center p-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+          <button
+            onClick={() => handleNavigate('goals')}
+            className={`w-full flex items-center p-3 rounded-lg transition-all ${
+              viewState.mode === 'goals'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
             <Target className="w-5 h-5 min-w-[20px]" />
-            <span className="ml-3 hidden lg:block font-medium">Hedefler</span>
+            <span className="ml-3 hidden lg:block font-medium">Goals</span>
           </button>
-          <button className="w-full flex items-center p-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
-            <Settings className="w-5 h-5 min-w-[20px]" />
-            <span className="ml-3 hidden lg:block font-medium">Ayarlar</span>
+          <button
+            onClick={() => handleNavigate('settings')}
+            className={`w-full flex items-center p-3 rounded-lg transition-all ${
+              viewState.mode === 'settings'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <SettingsIcon className="w-5 h-5 min-w-[20px]" />
+            <span className="ml-3 hidden lg:block font-medium">Settings</span>
           </button>
         </nav>
 
@@ -646,6 +780,21 @@ const App: React.FC = () => {
             {viewState.mode === 'overview' && renderOverview()}
             {viewState.mode === 'customer' && renderCustomerView()}
             {viewState.mode === 'campaign' && renderCampaignView()}
+            {viewState.mode === 'channels' && <ChannelsView customers={customers} currency={settings.currency} />}
+            {viewState.mode === 'goals' && (
+              <GoalsView
+                goals={goals}
+                onAddGoal={handleAddGoal}
+                onUpdateGoal={handleUpdateGoal}
+                currency={settings.currency}
+                totalRevenue={globalMetrics.totalRevenue}
+                totalSpend={globalMetrics.totalSpend}
+                totalCustomers={globalMetrics.totalCustomers}
+              />
+            )}
+            {viewState.mode === 'settings' && (
+              <SettingsView settings={settings} onUpdateSettings={setSettings} />
+            )}
           </div>
         </div>
       </main>
@@ -668,6 +817,16 @@ const App: React.FC = () => {
         isOpen={isChannelModalOpen}
         onClose={() => setIsChannelModalOpen(false)}
         onSave={handleAddChannel}
+      />
+
+      {/* AI Optimization Modal */}
+      <OptimizationModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onApply={applyOptimization}
+        data={aiRecommendation}
+        channels={selectedCampaign?.channels || []}
+        isLoading={aiLoading}
       />
     </div>
   );
