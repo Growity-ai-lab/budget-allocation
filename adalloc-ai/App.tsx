@@ -31,6 +31,8 @@ import ChannelsView from './components/ChannelsView';
 import OptimizationModal from './components/OptimizationModal';
 import { getBudgetOptimization } from './services/geminiService';
 
+const DATA_VERSION = '2.0'; // Updated customer names
+
 const App: React.FC = () => {
   // State Management
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -51,11 +53,17 @@ const App: React.FC = () => {
 
   // Load data from localStorage on mount
   useEffect(() => {
+    const savedVersion = localStorage.getItem('adalloc-version');
     const savedData = localStorage.getItem('adalloc-customers');
     const savedSettings = localStorage.getItem('adalloc-settings');
     const savedGoals = localStorage.getItem('adalloc-goals');
 
-    if (savedData) {
+    // If version mismatch or no version, reset to initial data
+    if (savedVersion !== DATA_VERSION) {
+      console.log('Data version mismatch or missing. Loading fresh data...');
+      localStorage.setItem('adalloc-version', DATA_VERSION);
+      setCustomers(INITIAL_CUSTOMERS);
+    } else if (savedData) {
       setCustomers(JSON.parse(savedData));
     } else {
       setCustomers(INITIAL_CUSTOMERS);
@@ -288,12 +296,12 @@ const App: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Toplam Harcama"
-          value={globalMetrics.totalSpend.toLocaleString('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+          value={formatCurrency(globalMetrics.totalSpend, settings.currency)}
           change={12.5}
         />
         <MetricCard
           title="Toplam Gelir"
-          value={globalMetrics.totalRevenue.toLocaleString('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+          value={formatCurrency(globalMetrics.totalRevenue, settings.currency)}
           change={8.2}
         />
         <MetricCard
@@ -417,12 +425,12 @@ const App: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <MetricCard
             title="Toplam Harcama"
-            value={customerMetrics.totalSpend.toLocaleString('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+            value={formatCurrency(customerMetrics.totalSpend, settings.currency)}
             change={5.3}
           />
           <MetricCard
             title="Toplam Gelir"
-            value={customerMetrics.totalRevenue.toLocaleString('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+            value={formatCurrency(customerMetrics.totalRevenue, settings.currency)}
             change={12.1}
           />
           <MetricCard
@@ -535,12 +543,12 @@ const App: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Toplam Harcama"
-            value={totalSpend.toLocaleString('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+            value={formatCurrency(totalSpend, settings.currency)}
             change={8.5}
           />
           <MetricCard
             title="Toplam Gelir"
-            value={totalRevenue.toLocaleString('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+            value={formatCurrency(totalRevenue, settings.currency)}
             change={15.2}
           />
           <MetricCard
@@ -564,7 +572,7 @@ const App: React.FC = () => {
                 <h3 className="font-bold text-slate-800">Harcama Dağılımı</h3>
                 <PieChart className="w-5 h-5 text-slate-400" />
               </div>
-              <SpendDistributionChart data={selectedCampaign.channels} />
+              <SpendDistributionChart data={selectedCampaign.channels} currency={settings.currency} />
             </div>
 
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -572,7 +580,7 @@ const App: React.FC = () => {
                 <h3 className="font-bold text-slate-800">Kanal Performansı</h3>
                 <BarChart3 className="w-5 h-5 text-slate-400" />
               </div>
-              <PerformanceBarChart data={selectedCampaign.channels} />
+              <PerformanceBarChart data={selectedCampaign.channels} currency={settings.currency} />
             </div>
           </div>
 
@@ -654,7 +662,7 @@ const App: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right font-medium text-slate-700">
-                          {channel.revenue.toLocaleString('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                          {formatCurrency(channel.revenue, settings.currency)}
                         </td>
                       </tr>
                     ))}
@@ -664,11 +672,11 @@ const App: React.FC = () => {
                       <td className="px-6 py-4 font-bold text-slate-900">Toplam</td>
                       <td className="px-6 py-4"></td>
                       <td className="px-6 py-4 text-right font-bold text-slate-900">
-                        {totalSpend.toLocaleString('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                        {formatCurrency(totalSpend, settings.currency)}
                       </td>
                       <td className="px-6 py-4"></td>
                       <td className="px-6 py-4 text-right font-bold text-emerald-600">
-                        {totalRevenue.toLocaleString('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                        {formatCurrency(totalRevenue, settings.currency)}
                       </td>
                     </tr>
                   </tfoot>
@@ -827,6 +835,7 @@ const App: React.FC = () => {
         data={aiRecommendation}
         channels={selectedCampaign?.channels || []}
         isLoading={aiLoading}
+        currency={settings.currency}
       />
     </div>
   );

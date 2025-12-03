@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Check, BrainCircuit } from 'lucide-react';
-import { RecommendationResponse, ChannelData } from '../types';
+import { RecommendationResponse, ChannelData, Currency } from '../types';
+import { formatCurrency } from '../utils';
 
 interface OptimizationModalProps {
   isOpen: boolean;
@@ -9,15 +10,17 @@ interface OptimizationModalProps {
   data: RecommendationResponse | null;
   channels: ChannelData[];
   isLoading: boolean;
+  currency: Currency;
 }
 
-const OptimizationModal: React.FC<OptimizationModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onApply, 
-  data, 
+const OptimizationModal: React.FC<OptimizationModalProps> = ({
+  isOpen,
+  onClose,
+  onApply,
+  data,
   channels,
-  isLoading
+  isLoading,
+  currency
 }) => {
   if (!isOpen) return null;
 
@@ -81,7 +84,7 @@ const OptimizationModal: React.FC<OptimizationModalProps> = ({
                             {channels.find(c => c.id === rec.channelId)?.name}
                           </span>
                           <span className={`text-sm font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {isPositive ? '+' : ''}{diff.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                            {isPositive ? '+' : ''}{formatCurrency(diff, currency)}
                           </span>
                         </div>
                         <p className="text-sm text-slate-600">{rec.reasoning}</p>
@@ -89,7 +92,7 @@ const OptimizationModal: React.FC<OptimizationModalProps> = ({
                       <div className="sm:text-right min-w-[120px]">
                          <div className="text-xs text-slate-500">New Budget</div>
                          <div className="text-lg font-bold text-slate-900">
-                           {rec.suggestedSpend.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                           {formatCurrency(rec.suggestedSpend, currency)}
                          </div>
                       </div>
                     </div>
