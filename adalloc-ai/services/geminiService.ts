@@ -1,7 +1,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ChannelData, RecommendationResponse } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize AI only if API key is available
+let ai: GoogleGenAI | null = null;
+try {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+  if (apiKey) {
+    ai = new GoogleGenAI({ apiKey });
+  }
+} catch (e) {
+  console.warn('Gemini API not configured. AI features will be disabled.');
+}
 
 export const getBudgetOptimization = async (
   currentChannels: ChannelData[],
@@ -37,6 +46,14 @@ export const getBudgetOptimization = async (
   `;
 
   try {
+    // Check if AI is initialized
+    if (!ai) {
+      return {
+        recommendations: [],
+        globalStrategy: "AI Strategist is not configured. To use AI features, please set VITE_GEMINI_API_KEY environment variable."
+      };
+    }
+
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
