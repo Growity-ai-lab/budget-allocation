@@ -6,11 +6,23 @@ import { formatCurrency } from '../utils';
 interface ChannelsViewProps {
   customers: Customer[];
   currency: Currency;
+  selectedCustomerId?: string;
 }
 
-const ChannelsView: React.FC<ChannelsViewProps> = ({ customers, currency }) => {
+const ChannelsView: React.FC<ChannelsViewProps> = ({ customers, currency, selectedCustomerId }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'spend' | 'revenue' | 'roas'>('spend');
+
+  // Filter customers by selectedCustomerId if provided
+  const filteredCustomers = useMemo(() => {
+    if (selectedCustomerId) {
+      return customers.filter(c => c.id === selectedCustomerId);
+    }
+    return customers;
+  }, [customers, selectedCustomerId]);
+
+  // Get the selected customer name for display
+  const selectedCustomer = selectedCustomerId ? customers.find(c => c.id === selectedCustomerId) : null;
 
   // Flatten all channels from all campaigns
   const allChannels = useMemo(() => {
@@ -28,7 +40,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ customers, currency }) => {
       color: string;
     }> = [];
 
-    customers.forEach(customer => {
+    filteredCustomers.forEach(customer => {
       customer.campaigns.forEach(campaign => {
         campaign.channels.forEach(channel => {
           channels.push({
@@ -49,7 +61,7 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ customers, currency }) => {
     });
 
     return channels;
-  }, [customers]);
+  }, [filteredCustomers]);
 
   // Filter and sort channels
   const filteredChannels = useMemo(() => {
@@ -95,8 +107,14 @@ const ChannelsView: React.FC<ChannelsViewProps> = ({ customers, currency }) => {
           <Radio className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tüm Kanallar</h1>
-          <p className="text-slate-500">Tüm müşteriler ve kampanyalar genelinde kanal performansı</p>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {selectedCustomer ? `${selectedCustomer.name} - Kanallar` : 'Tüm Kanallar'}
+          </h1>
+          <p className="text-slate-500">
+            {selectedCustomer
+              ? `${selectedCustomer.name} müşterisinin kampanyalarında kanal performansı`
+              : 'Tüm müşteriler ve kampanyalar genelinde kanal performansı'}
+          </p>
         </div>
       </div>
 

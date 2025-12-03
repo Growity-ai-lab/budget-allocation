@@ -345,7 +345,7 @@ const App: React.FC = () => {
           <CustomerCard
             key={customer.id}
             customer={customer}
-            onClick={() => handleNavigate('customer', customer.id)}
+            onClick={() => handleNavigate('channels', customer.id)}
           />
         ))}
       </div>
@@ -780,7 +780,7 @@ const App: React.FC = () => {
             {viewState.mode === 'overview' && renderOverview()}
             {viewState.mode === 'customer' && renderCustomerView()}
             {viewState.mode === 'campaign' && renderCampaignView()}
-            {viewState.mode === 'channels' && <ChannelsView customers={customers} currency={settings.currency} />}
+            {viewState.mode === 'channels' && <ChannelsView customers={customers} currency={settings.currency} selectedCustomerId={viewState.selectedCustomerId} />}
             {viewState.mode === 'goals' && (
               <GoalsView
                 goals={goals}

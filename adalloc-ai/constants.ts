@@ -60,10 +60,10 @@ export const TOTAL_BUDGET = 50000;
 export const INITIAL_CUSTOMERS: Customer[] = [
   {
     id: 'cust-1',
-    name: 'TechCorp Global',
-    industry: 'Technology',
-    contactPerson: 'Ahmet Yılmaz',
-    email: 'ahmet@techcorp.com',
+    name: 'Uludağ İçecek',
+    industry: 'Beverage',
+    contactPerson: 'Nazlı İPEKLİ BİLGEHAN',
+    email: 'nbilgehan@uludagicecek.com.tr',
     status: 'active',
     totalBudget: 100000,
     color: '#10B981',
@@ -103,10 +103,10 @@ export const INITIAL_CUSTOMERS: Customer[] = [
   },
   {
     id: 'cust-2',
-    name: 'RetailMax Türkiye',
-    industry: 'E-commerce',
-    contactPerson: 'Ayşe Demir',
-    email: 'ayse@retailmax.com.tr',
+    name: 'Gree Klima',
+    industry: 'HVAC',
+    contactPerson: 'Mertcan Gür',
+    email: 'mgur@tlcklima.com',
     status: 'active',
     totalBudget: 150000,
     color: '#F59E0B',
@@ -132,10 +132,10 @@ export const INITIAL_CUSTOMERS: Customer[] = [
   },
   {
     id: 'cust-3',
-    name: 'HealthPlus Wellness',
-    industry: 'Healthcare',
-    contactPerson: 'Mehmet Kaya',
-    email: 'mehmet@healthplus.com',
+    name: 'Unicef',
+    industry: 'Non-Profit',
+    contactPerson: 'Yağmur İpek',
+    email: 'yipek@unicefturk.org',
     status: 'active',
     totalBudget: 75000,
     color: '#8B5CF6',
@@ -154,6 +154,34 @@ export const INITIAL_CUSTOMERS: Customer[] = [
           { ...INITIAL_CHANNELS[0], id: 'ch-3-1-1', spend: 12000, revenue: 54000 },
           { ...INITIAL_CHANNELS[1], id: 'ch-3-1-2', spend: 16000, revenue: 41600 },
           { ...INITIAL_CHANNELS[3], id: 'ch-3-1-3', spend: 7000, revenue: 21000 }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'cust-4',
+    name: 'Hayhay',
+    industry: 'E-commerce',
+    contactPerson: 'Berk Çağlayan',
+    email: 'berk.caglayan@hayhay.com',
+    status: 'active',
+    totalBudget: 120000,
+    color: '#EF4444',
+    createdAt: '2025-01-10',
+    campaigns: [
+      {
+        id: 'camp-4-1',
+        name: 'Dijital Dönüşüm',
+        customerId: 'cust-4',
+        description: 'Online satış kanallarını güçlendirme',
+        status: 'active',
+        startDate: '2025-02-01',
+        budget: 60000,
+        createdAt: '2025-01-15',
+        channels: [
+          { ...INITIAL_CHANNELS[0], id: 'ch-4-1-1', spend: 20000, revenue: 90000 },
+          { ...INITIAL_CHANNELS[1], id: 'ch-4-1-2', spend: 25000, revenue: 65000 },
+          { ...INITIAL_CHANNELS[2], id: 'ch-4-1-3', spend: 10000, revenue: 18000 }
         ]
       }
     ]
